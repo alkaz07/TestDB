@@ -13,6 +13,11 @@ public class User {
         this.money = money;
     }
 
+    public void setFio(String fio) {
+        this.fio = fio;
+
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
