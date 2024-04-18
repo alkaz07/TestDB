@@ -3,7 +3,9 @@ package org.example;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Properties;
+import java.util.Random;
 import java.util.Scanner;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class Main {
     public static void main(String[] args) throws SQLException {
@@ -12,7 +14,51 @@ public class Main {
         //example2();
         // exampleInsert1();
         // exampleInsert2();
-        exampleUpdate1();
+        // exampleUpdate1();
+        exampleWithDBLoader1();
+        exampleWithFLoader1();
+        exampleWithRandomLoader();
+    }
+
+    private static void exampleWithRandomLoader() {
+        IUsersLoader loader = () -> {
+            ArrayList<User> users = new ArrayList<>(2);
+            users.add(new User(0, "Рандом0", ThreadLocalRandom.current().nextInt(-1000, 1001)));
+            users.add(new User(1, "Рандом1", ThreadLocalRandom.current().nextInt(-1000, 1001)));
+            return users;
+        };
+        try {
+            ArrayList<User> users = loader.loadUsers();
+            System.out.println("получен список из " + users.size() + " юзеров");
+            users.forEach(System.out::println);
+        } catch (Exception e){
+            System.out.println("не удалось загрузить список юзеров");
+        }
+    }
+
+    private static void exampleWithFLoader1() {
+        IUsersLoader loader = new FUserLoader("users1.csv");
+        try {
+            ArrayList<User> users = loader.loadUsers();
+            System.out.println("получен список из " + users.size() + " юзеров");
+            users.forEach(System.out::println);
+        } catch (Exception e){
+            System.out.println("не удалось загрузить список юзеров");
+        }
+    }
+
+    private static void exampleWithDBLoader1() {
+        Connection conn = connectToDB();
+        IUsersLoader loader = new DBUserLoader(conn);
+        try {
+            ArrayList<User> users = loader.loadUsers();
+            System.out.println("получен список из " + users.size() + " юзеров");
+            users.forEach(System.out::println);
+            conn.close();
+        }
+        catch (Exception e){
+            System.out.println("не удалось загрузить список юзеров");
+        }
     }
 
     private static void exampleUpdate1() throws SQLException {
@@ -32,7 +78,6 @@ public class Main {
         users.forEach(System.out::println);
         conn.close();
     }
-
 
 
     private static void changeFIO(User selectedUser) {
@@ -92,7 +137,6 @@ public class Main {
     }
 
 
-
     private static void example1() throws SQLException {
         Connection conn = connectToDB();
         Statement st = conn.createStatement();
@@ -149,6 +193,7 @@ public class Main {
             return null;
         }
     }
+
     //следующие методы относятся по смыслу к DAO (обеспечивают связь модели и БД)
     public static ArrayList<User> loadUsers(Connection conn) throws SQLException {
         ArrayList<User> users = new ArrayList<>();
@@ -179,7 +224,7 @@ public class Main {
     }
 
     public static void updateUserInDB(User user, Connection conn) throws SQLException {
-        if (user != null && conn !=null) {
+        if (user != null && conn != null) {
             PreparedStatement st = conn.prepareStatement("UPDATE public.\"user\"\n" +
                     "SET fio=?, \"money\"=?\n" +
                     "WHERE id=?;");
